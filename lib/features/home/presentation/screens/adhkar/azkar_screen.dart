@@ -10,7 +10,6 @@ import 'package:furqan/features/home/presentation/screens/adhkar/widgets/dhikr_l
 import 'package:furqan/features/home/presentation/widgets/custom_container.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
-import 'package:page_transition/page_transition.dart';
 
 class DhikrScreen extends StatefulWidget {
   const DhikrScreen({super.key});

@@ -38,7 +38,6 @@ abstract class ApiService {
   @GET("/reciters.json")
   Future<Map<String, String>> getAvailableReciters();
 
-  // https://quranapi.pages.dev/api/1/2.json
   ///https://quranapi.pages.dev/api/audio/2/1.json
   @GET("/audio/{surahNo}/{ayahNo}.json")
   Future<Map<String, AudioModel>> getVerseAudio(

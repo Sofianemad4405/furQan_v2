@@ -4,10 +4,12 @@ import 'dart:developer';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:furqan/core/services/prefs.dart';
+import 'package:furqan/core/supabase/real_time_subsctiption.dart';
 import 'package:furqan/features/user_data/controller/user_data_controller.dart';
 import 'package:furqan/features/user_data/models/daily_challenge_model.dart';
 import 'package:furqan/features/user_data/models/user_daily_challenge.dart';
 import 'package:furqan/features/user_data/models/user_progress.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 part 'user_progress_state.dart';
 
@@ -22,11 +24,17 @@ class UserProgressCubit extends Cubit<UserProgresState> {
   final Prefs prefs;
   final String? userId;
   Timer? _debounceTimer;
+  RealtimeChannel? _progressChannel;
   bool _isLoading = false;
 
   @override
   Future<void> close() {
     _debounceTimer?.cancel();
+    // Unsubscribe realtime channel if any
+    try {
+      _progressChannel?.unsubscribe();
+    } catch (_) {}
+    _progressChannel = null;
     return super.close();
   }
 
@@ -36,7 +44,10 @@ class UserProgressCubit extends Cubit<UserProgresState> {
       return;
     }
     loadUserProgress();
+    initRealtime(userId!);
   }
+
+  String get getuserId => prefs.userId!;
 
   Future<UserProgress> getUserProgress() async {
     if (userId == null) {
@@ -51,19 +62,18 @@ class UserProgressCubit extends Cubit<UserProgresState> {
     emit(UserProgressLoading());
 
     try {
-      final results = await Future.wait([
-        _userDataController.getUserProgress(userId!),
-        _userDataController.getDailyChallenges(),
-        _userDataController.getUserDailyChallengesProgress(userId!),
-      ]);
+      log('Loading user progress for userId: $userId');
 
-      final userProgress = results[0] as UserProgress;
-      final todayChallenges = (results[1] as List)
-          .map((e) => DailyChallengeModel.fromJson(e as Map<String, dynamic>))
-          .toList();
-      final userDailyChallengesProgress = (results[2] as List)
-          .map((e) => UserDailyChallenge.fromJson(e as Map<String, dynamic>))
-          .toList();
+      final userProgress = await _userDataController.getUserProgress(userId!);
+      log("UserProgress Loaded: $userProgress");
+
+      final dailyChallengesRaw = await _userDataController.getDailyChallenges();
+      log("Daily Challenges Raw: ${dailyChallengesRaw[0].description}");
+      final todayChallenges = dailyChallengesRaw.cast<DailyChallengeModel>();
+      final userDailyRaw = await _userDataController
+          .getUserDailyChallengesProgress(userId!);
+      log("User Daily Progress Raw: $userDailyRaw");
+      final userDailyChallengesProgress = userDailyRaw.toList();
 
       emit(
         UserProgressLoaded(
@@ -73,11 +83,32 @@ class UserProgressCubit extends Cubit<UserProgresState> {
         ),
       );
     } catch (e, stack) {
-      log('Error in loadUserProgress', error: e, stackTrace: stack);
+      log('Error in loadUserProgress: $e', error: e, stackTrace: stack);
       emit(UserProgressError(message: 'Failed to load user progress: $e'));
+      throw Exception('Failed to load user progress: $e');
     } finally {
       _isLoading = false;
     }
+  }
+
+  void initRealtime(String userId) {
+    _progressChannel = RealTimeSubscription.subscribeToUserProgress(
+      onUpdate: (newData) {
+        final currentState = state;
+
+        final updatedProgress = UserProgress.fromJson(newData);
+
+        if (currentState is UserProgressLoaded) {
+          emit(
+            UserProgressLoaded(
+              userProgress: updatedProgress,
+              todayChallenges: currentState.todayChallenges,
+              userDailyChallenges: currentState.userDailyChallenges,
+            ),
+          );
+        }
+      },
+    );
   }
 
   Future<void> updateUserData(Map<String, dynamic> updates) async {
@@ -130,7 +161,7 @@ class UserProgressCubit extends Cubit<UserProgresState> {
       ayahsRead: updates['ayahs_read'] ?? current.ayahsRead,
       currentStreak: updates['current_streak'] ?? current.currentStreak,
       bestStreak: updates['best_streak'] ?? current.bestStreak,
-      todayChallenges: updates['today_challenges'] ?? current.todayChallenges,
+      dailyChallenges: updates['daily_challenges'] ?? current.dailyChallenges,
       surahsReadIds: updates['surahs_read_ids'] ?? current.surahsReadIds,
       likedAyahs: updates['liked_ayahs'] ?? current.likedAyahs,
       weeklyHassanat: updates['weekly_hassanat'] ?? current.weeklyHassanat,
@@ -138,28 +169,35 @@ class UserProgressCubit extends Cubit<UserProgresState> {
     );
   }
 
-  Future<void> toggleAyahLike(int surahNo, int ayahNumber) async {
-    if (state is! UserProgressLoaded) return;
+  void toggleAyahLike(int surah, int ayah) {
+    final currentState = state;
 
-    try {
-      final current = (state as UserProgressLoaded).userProgress;
-      final surahKey = surahNo.toString();
+    if (currentState is! UserProgressLoaded) return;
 
-      final likedAyahs = Map<String, List<int>>.from(current.likedAyahs);
-      likedAyahs.putIfAbsent(surahKey, () => []);
+    final progress = currentState.userProgress;
 
-      final ayahList = likedAyahs[surahKey]!;
-      if (ayahList.contains(ayahNumber)) {
-        ayahList.remove(ayahNumber);
-      } else {
-        ayahList.add(ayahNumber);
-      }
+    final newLikes = Map<String, dynamic>.from(progress.likedAyahs);
 
-      await updateUserData({'liked_ayahs': likedAyahs});
-    } catch (e, stack) {
-      log('Error toggling ayah like', error: e, stackTrace: stack);
-      emit(UserProgressError(message: 'Failed to toggle ayah like: $e'));
+    final surahKey = surah.toString();
+    final list = List<int>.from(newLikes[surahKey] ?? []);
+
+    if (list.contains(ayah)) {
+      list.remove(ayah);
+    } else {
+      list.add(ayah);
     }
+
+    newLikes[surahKey] = list;
+
+    final newProgress = progress.copyWith(likedAyahs: newLikes);
+
+    emit(
+      UserProgressLoaded(
+        userProgress: newProgress,
+        todayChallenges: currentState.todayChallenges,
+        userDailyChallenges: currentState.userDailyChallenges,
+      ),
+    );
   }
 
   Future<List<DailyChallengeModel>> getDailyChallenges() async {

@@ -185,9 +185,6 @@ class AuthCubit extends Cubit<AuthState> {
     try {
       emit(SignInOtpLoading());
       await supabase.auth.signInWithOtp(email: email);
-      // ScaffoldMessenger.of(
-      //   context,
-      // ).showSnackBar(const SnackBar(content: Text("OTP sent!")));
       emit(SignInOtpSuccess());
     } on Exception catch (e) {
       emit(SignInOtpError(e.toString()));

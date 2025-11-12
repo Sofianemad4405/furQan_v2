@@ -1,5 +1,6 @@
 import 'dart:developer';
 
+import 'package:furqan/features/stats/data/models/achievement.dart';
 import 'package:furqan/features/stats/data/models/user_achievement.dart';
 import 'package:furqan/features/user_data/controller/user_controller_abstract.dart';
 import 'package:furqan/features/user_data/models/daily_challenge_model.dart';
@@ -61,6 +62,15 @@ class UserDataController implements UserControllerAbstract {
       return await _userProgressService.fetchUserAchievements(userId);
     } on Exception catch (e) {
       throw Exception('Failed to get user achievements: $e');
+    }
+  }
+
+  @override
+  Future<List<Achievement>> getAchievementsMetaData() async {
+    try {
+      return await _userProgressService.fetchAchievements();
+    } on Exception catch (e) {
+      throw Exception('Failed to get achievements: $e');
     }
   }
 }

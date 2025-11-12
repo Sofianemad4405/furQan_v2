@@ -10,6 +10,7 @@ import 'package:furqan/features/home/presentation/cubit/user_progress_cubit.dart
 import 'package:furqan/features/home/presentation/screens/adhkar/cubit/adhkar_cubit.dart';
 import 'package:furqan/features/home/presentation/screens/prayer_times/presentation/cubit/prayer_times_cubit.dart';
 import 'package:furqan/features/reading/presentation/cubit/reading_cubit.dart';
+import 'package:furqan/features/stats/presentation/cubit/stats_cubit.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 Future<void> main() async {
@@ -35,9 +36,23 @@ Future<void> main() async {
         BlocProvider(create: (context) => sl<AdhkarCubit>()),
         BlocProvider(create: (context) => sl<UserProgressCubit>()..init()),
         BlocProvider(create: (context) => sl<PrayerTimesCubit>()),
+        BlocProvider(create: (context) => sl<StatsCubit>()),
       ],
-      // child: Furqan(isLoggedIn: isLoggedIn),
-      child: Furqan(isLoggedIn: false),
+      child: Furqan(isLoggedIn: isLoggedIn),
     ),
   );
 }
+
+// final supabase = Supabase.instance.client;
+
+// final globalChannel = supabase
+//     .channel('public:user_progress')
+//     .onPostgresChanges(
+//       event: PostgresChangeEvent.all,
+//       schema: 'public',
+//       table: 'user_progress',
+//       callback: (payload) {
+//         print('GLOBAL: change in user_progress => ${payload.newRecord}');
+//       },
+//     )
+//     .subscribe();

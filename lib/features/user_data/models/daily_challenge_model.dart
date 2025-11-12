@@ -1,8 +1,8 @@
 class DailyChallengeModel {
   final int id;
   final String title;
-  final String icon;
   final String description;
+  final String icon;
   final int target;
   DailyChallengeModel({
     required this.id,
@@ -14,11 +14,11 @@ class DailyChallengeModel {
 
   factory DailyChallengeModel.fromJson(Map<String, dynamic> json) {
     return DailyChallengeModel(
-      title: json['title'] as String,
-      icon: json['icon'] as String,
-      description: json['description'] as String,
-      target: json['target'] as int,
-      id: json['id'] as int,
+      title: json['title'] as String? ?? '',
+      icon: json['icon'] as String? ?? '',
+      description: json['description'] as String? ?? '',
+      target: json['target'] as int? ?? 0,
+      id: json['id'] as int? ?? 0,
     );
   }
 

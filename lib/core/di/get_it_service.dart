@@ -21,6 +21,7 @@ import 'package:furqan/features/home/presentation/screens/prayer_times/presentat
 import 'package:furqan/features/reading/data/reading_data_source.dart';
 import 'package:furqan/features/reading/domain/reading_repo.dart';
 import 'package:furqan/features/reading/presentation/cubit/reading_cubit.dart';
+import 'package:furqan/features/stats/presentation/cubit/stats_cubit.dart';
 import 'package:furqan/features/user_data/controller/user_data_controller.dart';
 import 'package:furqan/features/user_data/services/user_progress_service.dart';
 import 'package:get_it/get_it.dart';
@@ -87,6 +88,9 @@ Future<void> init() async {
     () => UserProgressCubit(sl<UserDataController>(), sl<Prefs>()),
   );
   sl.registerLazySingleton<PrayerTimesCubit>(() => PrayerTimesCubit());
+  sl.registerLazySingleton<StatsCubit>(
+    () => StatsCubit(sl<UserDataController>(), sl<Prefs>()),
+  );
 }
 
 Future<void> setupLocator() async {

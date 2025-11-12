@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:furqan/features/stats/data/models/achievement.dart';
 import 'package:furqan/features/stats/data/models/user_achievement.dart';
 import 'package:furqan/features/user_data/models/daily_challenge_model.dart';
@@ -36,7 +38,7 @@ class UserProgressService implements UserProgressServiceAbstract {
           .insert(defaultProgress)
           .select()
           .maybeSingle();
-
+      log('inserted: $inserted');
       return UserProgress.fromJson(inserted!);
     }
     return UserProgress.fromJson(result);

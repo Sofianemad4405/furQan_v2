@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:furqan/core/di/get_it_service.dart';
+import 'package:furqan/core/services/prefs.dart';
 import 'package:furqan/core/themes/cubit/theme_cubit.dart';
 import 'package:furqan/features/home/presentation/cubit/user_progress_cubit.dart';
 import 'package:furqan/features/stats/data/models/achievement.dart';
 import 'package:furqan/features/stats/data/models/user_achievement.dart';
 import 'package:furqan/features/stats/data/models/weekly_progress.dart';
+import 'package:furqan/features/stats/presentation/cubit/stats_cubit.dart';
 import 'package:furqan/features/stats/presentation/widgets/achievements_grid.dart';
 import 'package:furqan/features/stats/presentation/widgets/additional_stats.dart';
 import 'package:furqan/features/stats/presentation/widgets/headear.dart';
@@ -25,8 +28,12 @@ class _StatsScreenState extends State<StatsScreen>
     with TickerProviderStateMixin {
   late AnimationController _controller;
   late List<Animation<double>> _cardAnimations;
+  final prefs = sl<Prefs>();
+  UserProgress? userProgress;
 
-  late UserProgress userProgress;
+  // Provide safe defaults for lists to avoid LateInitializationError
+  // List<Achievement> achievements = [];
+  // List<UserAchievement> userAchievements = [];
 
   final List<WeeklyProgress> weeklyProgress = [
     WeeklyProgress(day: 'Mon', hasanat: 45, time: 15),
@@ -38,12 +45,10 @@ class _StatsScreenState extends State<StatsScreen>
     WeeklyProgress(day: 'Sun', hasanat: 134, time: 38),
   ];
 
-  late List<Achievement> achievements;
-  late List<UserAchievement> userAchievements;
-
   @override
   void initState() {
     super.initState();
+    userProgress = UserProgress(userId: prefs.userId ?? '');
     _loadUserProgress();
 
     _controller = AnimationController(
@@ -85,57 +90,95 @@ class _StatsScreenState extends State<StatsScreen>
     final isDark = context.watch<ThemeCubit>().isDarkMood();
 
     return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header
-            _buildAnimatedWidget(_cardAnimations[0], Headear(isDark: isDark)),
-            const Gap(32),
+      child: BlocConsumer<UserProgressCubit, UserProgresState>(
+        listener: (context, state) {
+          // TODO: implement listener
+        },
+        builder: (context, state) {
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header
+                _buildAnimatedWidget(
+                  _cardAnimations[0],
+                  Headear(isDark: isDark),
+                ),
+                const Gap(32),
 
-            /// Main Stats Grid
-            _buildAnimatedWidget(
-              _cardAnimations[1],
-              MainStatsGrid(isDark: isDark, userProgress: userProgress),
-            ),
-            const Gap(32),
-            // Quran Progress
-            _buildAnimatedWidget(
-              _cardAnimations[2],
-              QuranProgress(isDark: isDark, userProgress: userProgress),
-            ),
-            const Gap(32),
-            // Weekly Activity
-            _buildAnimatedWidget(
-              _cardAnimations[3],
-              WeeklyActivity(
-                isDark: isDark,
-                maxHassanat: 156,
-                weeklyProgress: weeklyProgress,
-              ),
-            ),
-            const Gap(32),
+                /// Main Stats Grid
+                _buildAnimatedWidget(
+                  _cardAnimations[1],
+                  MainStatsGrid(
+                    isDark: isDark,
+                    userProgress:
+                        userProgress ??
+                        UserProgress(userId: prefs.userId ?? ''),
+                  ),
+                ),
+                const Gap(32),
+                // Quran Progress
+                _buildAnimatedWidget(
+                  _cardAnimations[2],
+                  QuranProgress(
+                    isDark: isDark,
+                    userProgress:
+                        userProgress ??
+                        UserProgress(userId: prefs.userId ?? ''),
+                  ),
+                ),
+                const Gap(32),
+                // Weekly Activity
+                _buildAnimatedWidget(
+                  _cardAnimations[3],
+                  WeeklyActivity(
+                    isDark: isDark,
+                    maxHassanat: 156,
+                    weeklyProgress: weeklyProgress,
+                  ),
+                ),
+                const Gap(32),
 
-            // Achievements
-            _buildAnimatedWidget(
-              _cardAnimations[4],
-              AchievementsGrid(
-                isDark: isDark,
-                achievements: achievements,
-                userAchievements: userAchievements,
-              ),
-            ),
-            const Gap(32),
+                // Achievements
+                BlocConsumer<StatsCubit, StatsState>(
+                  listener: (context, state) {
+                    // implement listener
+                  },
+                  builder: (context, state) {
+                    return (state is StatsLoaded)
+                        ? _buildAnimatedWidget(
+                            _cardAnimations[4],
+                            AchievementsGrid(
+                              isDark: isDark,
+                              achievements: state.achievements,
+                              userAchievements: state.userAchievements,
+                            ),
+                          )
+                        : (state is StatsLoading)
+                        ? const CircularProgressIndicator()
+                        : (state is StatsError)
+                        ? Text('Error loading stats ${state.error}')
+                        : Container(child: Text("Sifia"));
+                  },
+                ),
+                const Gap(32),
 
-            // Additional Stats
-            _buildAnimatedWidget(
-              _cardAnimations[5],
-              AdditionalStats(isDark: isDark, userProgress: userProgress),
+                // Additional Stats
+                _buildAnimatedWidget(
+                  _cardAnimations[5],
+                  AdditionalStats(
+                    isDark: isDark,
+                    userProgress:
+                        userProgress ??
+                        UserProgress(userId: prefs.userId ?? ''),
+                  ),
+                ),
+                const Gap(100), // Bottom padding for navigation
+              ],
             ),
-            const Gap(100), // Bottom padding for navigation
-          ],
-        ),
+          );
+        },
       ),
     );
   }

@@ -923,27 +923,27 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
         }
         if (state is SignUpSuccess) {
           log("Navigating to Email Verification Screen");
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (_) => EmailVerificationScreen(
-                email: _emailController.text,
-                onVerified: () {},
-                onBack: () {},
-              ),
-            ),
-          );
-          // ScaffoldMessenger.of(context).showSnackBar(
-          //   SnackBar(
-          //     content: Text(
-          //       "Account created successfully! Please sign in.",
-          //       style: Theme.of(context).textTheme.bodyMedium,
+          // Navigator.pushReplacement(
+          //   context,
+          //   MaterialPageRoute(
+          //     builder: (_) => EmailVerificationScreen(
+          //       email: _emailController.text,
+          //       onVerified: () {},
+          //       onBack: () {},
           //     ),
           //   ),
           // );
-          // setState(() {
-          //   _isLogin = true;
-          // });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                "Account created successfully! Please Check your Email and verify it.",
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ),
+          );
+          setState(() {
+            _isLogin = true;
+          });
         }
       },
       builder: (context, state) {

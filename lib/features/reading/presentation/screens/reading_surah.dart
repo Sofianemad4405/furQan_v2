@@ -138,7 +138,7 @@ class _ReadingSurahState extends State<ReadingSurah> {
     ReadingCubit readingCubit,
   ) async {
     setState(() {
-      if (ayahNumber < widget.surah.totalAyah) {
+      if (ayahNumber <= widget.surah.totalAyah) {
         ayahNumber++;
         ayahsRead++;
       }
